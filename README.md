@@ -68,3 +68,30 @@ Hover your mouse over any conversation item in your sidebar. Two icons will appe
 
 * Alt + L : Instantly lock the current active chat session.
 * Alt + H : Toggle the visibility of your Hidden Vault folder.
+
+
+## 📸 Screenshots
+
+### Sidebar Integration
+
+AI Vault integrates directly into the ChatGPT, Gemini, and Claude sidebars, allowing you to lock conversations, hide sensitive chats, and access the Hidden Vault folder without leaving the platform.
+
+![Sidebar Integration](sidebar.png)
+
+---
+
+### Global Master PIN Configuration
+
+Set a single Master PIN that protects conversations across all supported AI platforms. The PIN is securely hashed and stored locally on your device.
+
+![Global Master PIN](global-master-pin.png)
+
+---
+
+### Platform-Specific Security Codes
+
+For additional flexibility, AI Vault allows separate PINs for ChatGPT, Gemini, and Claude. This enables independent protection policies across different AI platforms.
+
+![Platform Specific PINs](individual-pin.png)
+
+---
