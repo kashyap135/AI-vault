@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 15px; width: 230px; background: #121212; color: #fff; margin:0; }
+    .card { background: #1e1e1e; padding: 15px; border-radius: 10px; border: 1px solid #333; }
+    h3 { margin: 0 0 10px 0; font-size: 16px; color: #1a73e8; }
+    label { font-size: 11px; color: #aaa; display: block; margin-top: 8px; text-align: left; }
+    select, input, button { width: 100%; box-sizing: border-box; padding: 8px; border-radius: 6px; margin-top: 4px; background: #2a2a2a; color: white; border: 1px solid #444; outline: none; }
+    select:focus, input:focus { border-color: #1a73e8; }
+    button { background: #1a73e8; font-weight: bold; cursor: pointer; border: none; margin-top: 12px; }
+    button:hover { background: #1557b0; }
+    .toggle-container { display: flex; align-items: center; justify-content: space-between; margin-top: 15px; padding-top: 12px; border-top: 1px solid #333; }
+    .toggle-label { font-size: 13px; font-weight: bold; }
+    #status { font-size: 12px; text-align: center; margin-top: 8px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h3>⚙️ AI Vault Control Center</h3>
+    
+    <label>Select Scope</label>
+    <select id="pin-scope">
+      <option value="vaultPin">🔑 Global Master PIN</option>
+      <option value="chatgptPin">💬 ChatGPT Custom PIN</option>
+      <option value="geminiPin">♊ Gemini Custom PIN</option>
+      <option value="claudePin">🛡️ Claude Custom PIN</option>
+    </select>
+
+    <label>Enter New 4-Digit Code</label>
+    <input type="password" id="pin-entry" maxlength="4" placeholder="****">
+    <button id="save-settings-btn">Update Code</button>
+    <div id="status"></div>
+
+    <div class="toggle-container">
+      <span class="toggle-label">🙈 Reveal Hidden Chats</span>
+      <input type="checkbox" id="stealth-toggle" style="width: auto; margin: 0; cursor: pointer;">
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

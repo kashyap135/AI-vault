@@ -1,0 +1,119 @@
+/* Keeps the lock icon inside the chat button boundary */
+.ai-vault-relative-parent {
+    position: relative !important;
+}
+
+/* Container holding both Lock and Hide buttons on hover */
+.ai-vault-btn-container {
+    position: absolute !important;
+    right: 42px !important; 
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    display: flex !important;
+    gap: 4px !important;
+    z-index: 9999 !important;
+    padding-left: 10px !important;
+    padding-right: 4px !important;
+    opacity: 0;
+    transition: opacity 0.15s ease-in-out;
+    background: linear-gradient(90deg, transparent 0%, var(--ai-vault-bg, #202123) 20%, var(--ai-vault-bg, #202123) 100%) !important;
+}
+
+.ai-vault-relative-parent:hover .ai-vault-btn-container {
+    opacity: 1 !important;
+}
+
+.ai-vault-btn {
+    font-size: 13px !important;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 3px 6px;
+    user-select: none;
+    display: inline-block !important;
+}
+
+.ai-vault-btn:hover {
+    background: rgba(128, 128, 128, 0.3) !important;
+}
+
+/* --- FEATURE 2: SMOOTH ANIMATIONS --- */
+
+/* Replaces rigid display:none with a smooth collapsing animation */
+.ai-vault-hidden-chat {
+    opacity: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border: none !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* WhatsApp Folder Style */
+.ai-vault-folder-item {
+    display: flex !important;
+    align-items: center !important;
+    padding: 10px 14px !important;
+    margin: 8px 12px !important;
+    background: rgba(26, 115, 232, 0.15) !important;
+    border: 1px solid rgba(26, 115, 232, 0.3) !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    font-weight: bold !important;
+    font-size: 14px !important;
+    color: #1a73e8 !important;
+    transition: all 0.2s ease-in-out !important;
+    user-select: none !important;
+}
+
+.ai-vault-folder-item:hover {
+    background: rgba(26, 115, 232, 0.25) !important;
+    transform: translateY(-1px);
+}
+
+.ai-vault-revealed-stealth {
+    border-left: 3px solid #ff9800 !important;
+    background: rgba(255, 152, 0, 0.05) !important;
+    transition: all 0.3s ease !important;
+}
+
+/* Smooth Blur Transition for Main Screen */
+.ai-main-chat-locked { 
+    filter: blur(25px) grayscale(50%) !important; 
+    pointer-events: none !important; 
+    user-select: none !important;
+    transition: filter 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.ai-lock-overlay { 
+    position: fixed !important; top: 0; left: 0; width: 100vw; height: 100vh; 
+    background: rgba(0,0,0,0.5); 
+    display: flex; align-items: center; justify-content: center; 
+    z-index: 999999; 
+    backdrop-filter: blur(2px); 
+    animation: fadeIn 0.3s ease-out;
+    /* THE MAGIC FIX: Lets you click through the dark background */
+    pointer-events: none !important; 
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* Consolidated Lock Box Styles */
+.ai-lock-box { 
+    background: #1e1e1e; color: white; padding: 30px; border-radius: 16px; 
+    text-align: center; width: 280px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); 
+    border: 1px solid #333;
+    /* Keeps the actual PIN pad clickable */
+    pointer-events: auto !important; 
+}
+
+.ai-lock-box h3 { margin-top: 0; color: #e8eaed; }
+.ai-lock-box input { width: 120px; padding: 10px; background: #2a2a2a; border: 1px solid #444; color: white; text-align: center; font-size: 22px; letter-spacing: 4px; border-radius: 8px; margin-bottom: 15px; outline: none; transition: border 0.2s;}
+.ai-lock-box input:focus { border-color: #1a73e8; }
+.ai-lock-box button { background: #1a73e8; color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; transition: background 0.2s;}
+.ai-lock-box button:hover { background: #1557b0; }
+.ai-lock-error { color: #ff6b6b; font-size: 13px; margin-top: 10px; min-height: 15px;}
