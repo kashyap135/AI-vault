@@ -1,24 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-
-  <meta charset="UTF-8"> <style>
+  <meta charset="UTF-8">
+  <style>
     body { font-family: system-ui, sans-serif; padding: 15px; width: 230px; background: #121212; color: #fff; margin:0; }
     .card { background: #1e1e1e; padding: 15px; border-radius: 10px; border: 1px solid #333; }
     h3 { margin: 0 0 10px 0; font-size: 16px; color: #1a73e8; }
     label { font-size: 11px; color: #aaa; display: block; margin-top: 8px; text-align: left; }
-    select, input, button { width: 100%; box-sizing: border-box; padding: 8px; border-radius: 6px; margin-top: 4px; background: #2a2a2a; color: white; border: 1px solid #444; outline: none; }
+    select, input, button { width: 100%; box-sizing: border-box; padding: 8px; border-radius: 6px; margin-top: 4px; background: #2a2a2a; color: white; border: 1px solid #444; outline: none; transition: border 0.2s; }
     select:focus, input:focus { border-color: #1a73e8; }
+    input[type="password"] { text-align: center; font-size: 16px; letter-spacing: 4px; }
     button { background: #1a73e8; font-weight: bold; cursor: pointer; border: none; margin-top: 12px; }
     button:hover { background: #1557b0; }
-    .toggle-container { display: flex; align-items: center; justify-content: space-between; margin-top: 15px; padding-top: 12px; border-top: 1px solid #333; }
-    .toggle-label { font-size: 13px; font-weight: bold; }
-    #status { font-size: 12px; text-align: center; margin-top: 8px; font-weight: bold; }
+    #status { font-size: 12px; text-align: center; margin-top: 12px; font-weight: bold; min-height: 15px; }
   </style>
 </head>
 <body>
   <div class="card">
-    <h3>⚙️ AI Vault Control Center</h3>
+    <h3>⚙️ AI Vault Control</h3>
     
     <label>Select Scope</label>
     <select id="pin-scope">
@@ -28,12 +27,24 @@
       <option value="claudePin">🛡️ Claude Custom PIN</option>
     </select>
 
-    <label>Enter New 4-Digit Code</label>
-    <input type="password" id="pin-entry" maxlength="4" placeholder="****">
-    <button id="save-settings-btn">Update Code</button>
-    <div id="status"></div>
+    <label>Current PIN (Blank if first setup)</label>
+    <input type="password" id="current-pin-entry" maxlength="4" placeholder="****">
 
-   
+    <label>New 4-Digit Code</label>
+    <input type="password" id="new-pin-entry" maxlength="4" placeholder="****">
+    
+    <label>Auto-Lock When Away</label>
+    <select id="auto-lock-timeout">
+      <option value="60000">1 Minute</option>
+      <option value="300000" selected>5 Minutes</option>
+      <option value="600000">10 Minutes</option>
+      <option value="1800000">30 Minutes</option>
+      <option value="0">Disabled</option>
+    </select>
+
+    <button id="save-settings-btn">Save Configurations</button>
+    <div id="status"></div>
+  </div>
 
   <script src="popup.js"></script>
 </body>

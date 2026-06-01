@@ -9,7 +9,66 @@ let lockedChatsList = [];
 let hiddenChatsList = [];
 let isVaultFolderOpen = false;
 let isSessionUnlocked = false;
+let awayTimer = null;
 
+function startAwayTracker() {
+    // 1. Clear any existing timer loops safely
+    if (awayTimer) clearTimeout(awayTimer);
+
+    chrome.storage.local.get(["vaultTimeout"], (result) => {
+        const timeoutDuration = result.vaultTimeout !== undefined ? result.vaultTimeout : 300000; // 5 mins default
+
+        // If disabled by user, exit tracker completely
+        if (timeoutDuration === 0) {
+            console.log("🔒 AI Vault: Auto-Lock is currently disabled.");
+            return;
+        }
+
+        console.log(`🔒 AI Vault: Inactivity tracker armed for ${timeoutDuration / 1000} seconds.`);
+
+        function resetTimer() {
+            clearTimeout(awayTimer);
+            awayTimer = setTimeout(() => {
+                // LOCKOUT EVENT TRIGGERED DUE TO USER AWAY STATE
+                isSessionUnlocked = false;    // Re-locks active running chats
+                isVaultFolderOpen = false;    // Closes and locks stealth container rows
+                
+                // Remove open verification modals to force a complete layout recalculation
+                const activeOverlay = document.getElementById('ai-vault-overlay');
+                if (activeOverlay) activeOverlay.remove();
+                
+                // Re-evaluate current DOM privacy rules immediately
+                enforcePrivacy();
+                runVault();
+                console.log("🔒 AI Vault: Session automatically secured due to inactivity.");
+            }, timeoutDuration);
+        }
+
+        // Listen for standard human interaction behaviors across the window surface
+        window.removeEventListener('mousemove', resetTimer);
+        window.removeEventListener('keydown', resetTimer);
+        window.removeEventListener('click', resetTimer);
+        window.removeEventListener('scroll', resetTimer);
+
+        window.addEventListener('mousemove', resetTimer, { passive: true });
+        window.addEventListener('keydown', resetTimer, { passive: true });
+        window.addEventListener('click', resetTimer, { passive: true });
+        window.addEventListener('scroll', resetTimer, { passive: true });
+
+        resetTimer(); // Initialize tracking frames
+    });
+}
+
+// NEW: Live Storage Listener to catch configuration updates instantly without page reload!
+chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.vaultTimeout) {
+        console.log("🔒 AI Vault: Timeout setting updated live. Restarting idle clock tracker...");
+        startAwayTracker();
+    }
+});
+
+// Call this once on page load inside your initialization functions
+startAwayTracker();
 // --- SECURITY HELPERS ---
 async function hashSecure(text) {
     const msgBuffer = new TextEncoder().encode(text);
@@ -130,6 +189,7 @@ function enforcePrivacy() {
 }
 
 // UPGRADED: Now accepts a callback function to run on success!
+// UPGRADED: Dynamically displays which PIN (Master vs Custom) is required!
 function createInPageAuthOverlay(targetType, onSuccessCallback = null) {
     if (document.getElementById('ai-vault-overlay')) return;
 
@@ -138,57 +198,62 @@ function createInPageAuthOverlay(targetType, onSuccessCallback = null) {
     overlay.className = 'ai-lock-overlay';
     overlay.setAttribute('data-target-type', targetType);
     
-    overlay.innerHTML = `
-        <div class="ai-lock-box">
-            <h3>🔒 Verify PIN to Unlock ${targetType}</h3>
-            <input type="password" id="vault-page-pin" maxlength="4" placeholder="****" autofocus>
-            <div style="display: flex; gap: 10px;">
-                <button id="vault-page-btn">Submit</button>
-                <button id="vault-cancel-btn" style="background: #444;">Cancel</button>
-            </div>
-            <div id="vault-page-error" class="ai-lock-error"></div>
-        </div>
-    `;
+    // Append the blank overlay first to catch the background click
     document.body.appendChild(overlay);
 
-    const pinInput = document.getElementById('vault-page-pin');
-    const unlockBtn = document.getElementById('vault-page-btn');
-    const errorDiv = document.getElementById('vault-page-error');
-    const cancelBtn = document.getElementById('vault-cancel-btn');
+    const platformKey = `${adapter.platformName.toLowerCase()}Pin`;
+    
+    // Check storage to see if a custom PIN exists before drawing the box
+    chrome.storage.local.get([platformKey], (result) => {
+        const hasCustomPin = !!result[platformKey];
+        const pinLabel = hasCustomPin ? `${adapter.platformName} PIN` : "Master PIN";
 
-    pinInput.focus();
-    if (cancelBtn) cancelBtn.addEventListener('click', () => overlay.remove());
+        overlay.innerHTML = `
+            <div class="ai-lock-box">
+                <h3 style="font-size: 15px;">🔒 Verify ${pinLabel} to Unlock ${targetType}</h3>
+                <input type="password" id="vault-page-pin" maxlength="4" placeholder="****" autofocus>
+                <div style="display: flex; gap: 10px;">
+                    <button id="vault-page-btn">Submit</button>
+                    <button id="vault-cancel-btn" style="background: #444;">Cancel</button>
+                </div>
+                <div id="vault-page-error" class="ai-lock-error"></div>
+            </div>
+        `;
 
-    async function handleUnlockAttempt() {
-        const platformKey = `${adapter.platformName.toLowerCase()}Pin`;
-        
-        chrome.storage.local.get(["vaultPin", platformKey], async (result) => {
-            const correctHash = result[platformKey] || result.vaultPin;
-            const inputHash = await hashSecure(pinInput.value); 
+        const pinInput = document.getElementById('vault-page-pin');
+        const unlockBtn = document.getElementById('vault-page-btn');
+        const errorDiv = document.getElementById('vault-page-error');
+        const cancelBtn = document.getElementById('vault-cancel-btn');
 
-            if (!correctHash) {
-                errorDiv.innerText = "Please configure a Master PIN first.";
-            } else if (inputHash === correctHash) {
-                overlay.remove();
-                
-                // If a callback was provided (like flipping a lock toggle), run it!
-                if (onSuccessCallback) {
-                    onSuccessCallback();
-                } 
-                // Otherwise, handle the default screen/folder unlocks
-                else {
-                    if (targetType === "Folder") { isVaultFolderOpen = true; runVault(); } 
-                    else { isSessionUnlocked = true; enforcePrivacy(); }
+        pinInput.focus();
+        if (cancelBtn) cancelBtn.addEventListener('click', () => overlay.remove());
+
+        async function handleUnlockAttempt() {
+            chrome.storage.local.get(["vaultPin", platformKey], async (authResult) => {
+                const correctHash = authResult[platformKey] || authResult.vaultPin;
+                const inputHash = await hashSecure(pinInput.value); 
+
+                if (!correctHash) {
+                    errorDiv.innerText = "Please configure a Master PIN first.";
+                } else if (inputHash === correctHash) {
+                    overlay.remove();
+                    
+                    if (onSuccessCallback) {
+                        onSuccessCallback();
+                    } else {
+                        if (targetType === "Folder") { isVaultFolderOpen = true; runVault(); } 
+                        else { isSessionUnlocked = true; enforcePrivacy(); }
+                    }
+                } else {
+                    errorDiv.innerText = "Incorrect PIN.";
+                    pinInput.value = ""; pinInput.focus();
                 }
-            } else {
-                errorDiv.innerText = "Incorrect PIN.";
-                pinInput.value = ""; pinInput.focus();
-            }
-        });
-    }
+            });
+        }
 
-    unlockBtn.addEventListener('click', handleUnlockAttempt);
-    pinInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleUnlockAttempt(); });
+        unlockBtn.addEventListener('click', handleUnlockAttempt);
+        pinInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleUnlockAttempt(); });
+    });
 }
 
 // --- KEYBOARD SHORTCUTS ---

@@ -1,4 +1,3 @@
-// --- FEATURE 4: SHA-256 Cryptography Engine ---
 async function hashSecure(text) {
     const msgBuffer = new TextEncoder().encode(text);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -8,46 +7,60 @@ async function hashSecure(text) {
 
 document.addEventListener("DOMContentLoaded", () => {
     const scopeSelect = document.getElementById("pin-scope");
-    const pinEntry = document.getElementById("pin-entry");
+    const currentPinEntry = document.getElementById("current-pin-entry");
+    const newPinEntry = document.getElementById("new-pin-entry");
+    const timeoutSelect = document.getElementById("auto-lock-timeout");
     const saveBtn = document.getElementById("save-settings-btn");
     const statusEl = document.getElementById("status");
-    const stealthToggle = document.getElementById("stealth-toggle");
 
-    chrome.storage.local.get(["revealHiddenState"], (result) => {
-        if (result.revealHiddenState !== undefined) stealthToggle.checked = result.revealHiddenState;
-    });
-
-    saveBtn.addEventListener("click", async () => {
-        const selectedScope = scopeSelect.value;
-        const inputVal = pinEntry.value;
-
-        if (inputVal.length === 4 && !isNaN(inputVal)) {
-            // Hash the PIN before saving it to the database
-            const hashedPin = await hashSecure(inputVal);
-            
-            let dataObject = {};
-            dataObject[selectedScope] = hashedPin;
-
-            chrome.storage.local.set(dataObject, () => {
-                statusEl.style.color = "#4caf50";
-                statusEl.innerText = "Secure Hash Stored Successfully!";
-                pinEntry.value = "";
-                setTimeout(() => { statusEl.innerText = ""; }, 2000);
-            });
-        } else {
-            statusEl.style.color = "#f44336";
-            statusEl.innerText = "Error: Key code must be a 4-digit number.";
+    // Load existing saved configuration on startup
+    chrome.storage.local.get(["vaultTimeout"], (result) => {
+        if (result.vaultTimeout !== undefined) {
+            timeoutSelect.value = result.vaultTimeout;
         }
     });
 
-    stealthToggle.addEventListener("change", () => {
-        const isChecked = stealthToggle.checked;
-        chrome.storage.local.set({ revealHiddenState: isChecked }, () => {
-            chrome.tabs.query({}, (tabs) => {
-                tabs.forEach(tab => {
-                    try { chrome.tabs.sendMessage(tab.id, { action: "updateVisibilityStates", revealHiddenState: isChecked }); } 
-                    catch(e) {}
-                });
+    saveBtn.addEventListener("click", () => {
+        const selectedScope = scopeSelect.value;
+        const currentVal = currentPinEntry.value;
+        const newVal = newPinEntry.value;
+        const selectedTimeout = parseInt(timeoutSelect.value);
+
+        chrome.storage.local.get(["vaultPin", selectedScope], async (result) => {
+            let updatePayload = { vaultTimeout: selectedTimeout };
+
+            // If user is trying to change a PIN
+            if (newVal.length > 0) {
+                if (newVal.length !== 4 || isNaN(newVal)) {
+                    statusEl.style.color = "#f44336";
+                    statusEl.innerText = "Error: PIN must be 4 digits.";
+                    return;
+                }
+
+                const requiredHash = result[selectedScope] || result.vaultPin;
+                if (requiredHash) {
+                    if (currentVal.length !== 4) {
+                        statusEl.style.color = "#ff9800";
+                        statusEl.innerText = "Please verify Current PIN.";
+                        return;
+                    }
+                    const currentHash = await hashSecure(currentVal);
+                    if (currentHash !== requiredHash) {
+                        statusEl.style.color = "#f44336";
+                        statusEl.innerText = "Incorrect Current PIN.";
+                        return;
+                    }
+                }
+                updatePayload[selectedScope] = await hashSecure(newVal);
+            }
+
+            // Save settings locally
+            chrome.storage.local.set(updatePayload, () => {
+                statusEl.style.color = "#4caf50";
+                statusEl.innerText = "Configurations saved!";
+                currentPinEntry.value = "";
+                newPinEntry.value = "";
+                setTimeout(() => { statusEl.innerText = ""; }, 2000);
             });
         });
     });
