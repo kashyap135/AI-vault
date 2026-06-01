@@ -26,7 +26,7 @@ Since this extension is completely open-source and respects your privacy, it is 
 2. Open Google Chrome and navigate to `chrome://extensions/` in your address bar.
 3. Turn on **Developer mode** using the toggle switch in the top right corner.
 4. Click the **Load unpacked** button in the top left corner.
-5. Select the folder containing your extracted extension files (the one containing `manifest.json`).
+5. Select the src folder located inside the extracted directory.
 
 ---
 
