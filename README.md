@@ -8,13 +8,13 @@ With AI becoming our daily journal, research assistant, and coding partner, keep
 
 ## ✨ Features
 
-* **Cross-Platform Support:** Works seamlessly across ChatGPT, Google Gemini, and Claude using zero-overhead page abstraction adapters.
-* **Smart Adaptive UI Overlay:** The in-page PIN pad dynamically detects and states whether it requires your Global Master PIN or a platform-specific custom key (e.g., *“Verify ChatGPT PIN”*).
+* **Cross-Platform Support:** Works seamlessly across ChatGPT, Google Gemini, and Claude.
+* **Dual Security Modes:** Choose between granular **Individual Chat Locks** (securing specific conversations) or a **Complete App Lock** (gatekeeping the entire application).
+* **Smart Adaptive UI Overlay:** The in-page PIN pad dynamically detects and states whether it requires your Global Master PIN or a platform-specific custom key.
 * **Stealth Mode:** Completely hide sensitive chats from your sidebar into a smooth, collapsible, WhatsApp-style Hidden Vault container.
-* **User-Away Auto-Lock:** A background idle engine that tracks mouse movements, clicks, scrolls, and keystrokes. Configurable timeouts (1, 5, 10, or 30 minutes) automatically clear active session state, collapse the vault folder, and fire the defensive blur filters when you walk away.
-* **Anti-Tamper Privilege Protection:** Prevents unauthorized physical overrides. Modifying any active PIN or provisioning custom keys requires passing a validation check of the current key or Master admin key.
+* **User-Away Auto-Lock:** A background idle engine that tracks activity. Configurable timeouts automatically clear active sessions, collapse the vault, and fire defensive blur filters when you walk away.
+* **Anti-Tamper Privilege Protection:** Modifying any active PIN or provisioning custom keys requires passing a validation check of the current key to prevent unauthorized physical overrides.
 * **Zero-Knowledge Architecture:** 100% of your data stays in local browser sandbox storage. No external servers, no network tracking, and no analytics.
-* **Cryptographic Security:** Passcodes are instantly digested into irreversible hex arrays using the hardware-accelerated Web Crypto API (SHA-256) before hitting your hard drive.
 
 ---
 
@@ -26,18 +26,19 @@ Since this extension is completely open-source and respects your privacy, it is 
 2. Open Google Chrome and navigate to `chrome://extensions/` in your address bar.
 3. Turn on **Developer mode** using the toggle switch in the top right corner.
 4. Click the **Load unpacked** button in the top left corner.
-5. Select the src folder located inside the extracted directory.
+5. Select the **`src` folder** located inside your extracted directory. *(Note: Do not select the outer master folder, you must select the `src` folder containing the `manifest.json` file!)*
 
 ---
 
 ## 🔑 Configuration & Security Control Center
 
-Once the extension is installed, click the extension icon in your toolbar to open the control center pane to configure your operational thresholds:
+Click the extension puzzle icon in your toolbar to open the control center pane:
 
-1. **Establish Master Key:** Enter a 4-digit numeric passcode to provision your Global Master PIN. Click **Save Configurations**.
-2. **Platform-Specific Codes:** Use the *Select Scope* dropdown to configure unique keys for individual platforms (ChatGPT, Gemini, Claude).
-3. **PIN Modifications:** To update an existing key, you must enter your current passcode into the *Current PIN* field to authorize the write operation. If setting a platform custom code for the first time, verify your *Master PIN* to cross-authorize it.
-4. **Auto-Lock Interval:** Select your preferred idle timeout duration from the dropdown. Changes write to the storage pipeline live and update open browser tabs instantly without requiring a page refresh.
+1. **Establish Master Key:** Enter a 4-digit numeric passcode to provision your Global Master PIN. 
+2. **Lock Mode Selection:** Choose whether you want to secure individual chats separately or lock down the entire web application behind a master gate.
+3. **Platform-Specific Codes:** Use the *Select Scope* dropdown to configure unique keys for individual platforms (ChatGPT, Gemini, Claude).
+4. **PIN Modifications:** To update an existing key, you must enter your current passcode into the *Current PIN* field to authorize the overwrite.
+5. **Auto-Lock Interval:** Select your preferred idle timeout duration (1 to 30 minutes). Changes update instantly across all open tabs without requiring a page refresh.
 
 ---
 
@@ -45,27 +46,21 @@ Once the extension is installed, click the extension icon in your toolbar to ope
 
 Once configured, the extension seamlessly embeds security controls directly onto your favorite AI dashboards.
 
-### Securing a Chat
-Hover your mouse over any conversation item in your sidebar. Two icons will appear on hover: a **lock icon** and an **eye icon**.
+### The Two Lock Modes
+* **Individual Chats Mode:** Hover over any chat in your sidebar to reveal the Lock and Hide icons. Click the lock to secure *only* that specific conversation. You can freely browse other public chats.
+* **Complete App Lock Mode:** The entire AI website is locked behind a 25px blur filter the moment you open it or walk away. You must enter your PIN before interacting with the UI.
 
-### Using the Lock Feature
-* **To Lock:** Click the open lock icon next to a chat. It will instantly switch to a closed lock icon, protecting that specific conversation runtime.
-* **Accessing a Locked Chat:** If you click on a locked chat from your sidebar, or refresh the page while viewing one, the main chat screen will blur out smoothly via CSS filters and present the in-page PIN pad overlay.
-* **To Unlock:** Type your 4-digit passcode into the overlay and press `Enter` or click `Submit`. The workspace will immediately clear up.
-* **Sidebar Freedom:** You are never trapped by the full-screen blocker. If you do not want to unlock that specific chat, you can simply click on any other public chat in your sidebar to move away, and the PIN pad will safely dismiss itself.
-* **Re-locking:** Clicking an already locked chat icon to revert it back to an unlocked state will challenge you for your PIN one more time to prevent unauthorized modifications.
-
-### Using the Hide (Stealth) Feature
-* **To Hide:** Click the eye icon next to any chat. The conversation will instantly slide out of view and completely disappear from your main sidebar loops.
-* **Accessing the Vault Folder:** A clean folder item labeled `📁 Hidden Vault` sits anchored at the top of your sidebar.
-* **Opening the Vault:** Click the folder. You will be prompted to verify your Master PIN. Once authenticated, your hidden chats will reveal themselves inside the sidebar with a distinct safety indicator border.
-* **Closing the Vault:** Click the folder item again to instantly collapse and purge your stealth chats from plain sight.
+### Securing & Hiding Chats (Individual Mode)
+* **To Lock:** Click the open lock icon next to a chat. It will instantly switch to a closed lock icon.
+* **To Unlock:** Click a locked chat. The main chat screen will blur out smoothly and present the in-page PIN pad. Type your 4-digit code and press `Enter`.
+* **To Hide (Stealth):** Click the eye icon next to any chat. The conversation will instantly slide out of view and disappear from your main sidebar.
+* **Accessing the Vault:** Click the `📁 Hidden Vault` folder at the top of your sidebar. Enter your PIN to temporarily reveal your hidden chats. Click it again to instantly collapse and secure them.
 
 ### The Auto-Lock / Inactivity Engine
-* The system monitors local tab activity in real-time. If you step away from your desk, the exact millisecond your idle countdown timer hits zero:
-  * Active chat authentication states are flipped back to locked.
-  * Opened stealth folders are collapsed and hidden.
-  * Any open PIN pad structures are instantly purged from the DOM to force a complete layout re-evaluation, locking the interface completely behind a 25px canvas blur filter.
+The system monitors local tab activity in real-time. If you step away from your desk, the exact millisecond your idle countdown timer hits zero:
+* Active chat authentication states are flipped back to locked.
+* Opened stealth folders are collapsed and hidden.
+* The interface is locked completely behind the canvas blur filter.
 
 ---
 
@@ -86,14 +81,16 @@ AI Vault integrates directly into the ChatGPT, Gemini, and Claude sidebars, allo
 ---
 
 ### Global Master PIN Configuration
-Set a single Master PIN that protects conversations across all supported AI platforms. The PIN modification process requires verifying your old key to prevent privilege escalation if you leave your desk.
+Set a single Master PIN that protects conversations across all supported AI platforms. The PIN modification process requires verifying your old key to prevent privilege escalation.
 
 ![Global Master PIN](global-master-pin.png)
 
 ---
-
+### Two Lock modes 
+* **Individual Chats Mode** 
+* **Complete App Lock Mode**
+![lock modes](lockmodes.png)
 ### Platform-Specific Security Codes & Away Timers
-For additional flexibility, configure separate PINs for specific platforms and set live auto-lock timeouts ranging from 1 to 30 minutes.
+For additional flexibility, configure separate PINs for specific platforms, choose your Lock Mode, and set live auto-lock timeouts ranging from 1 to 30 minutes.
 
 ![Platform Specific PINs](individual-pin.png)
-![Move away time](image.png)
