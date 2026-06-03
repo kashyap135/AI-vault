@@ -90,6 +90,8 @@ Set a single Master PIN that protects conversations across all supported AI plat
 * **Individual Chats Mode** 
 * **Complete App Lock Mode**
 ![lock modes](lockmodes.png)
+
+---
 ### Platform-Specific Security Codes & Away Timers
 For additional flexibility, configure separate PINs for specific platforms, choose your Lock Mode, and set live auto-lock timeouts ranging from 1 to 30 minutes.
 
