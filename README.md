@@ -87,8 +87,10 @@ Set a single Master PIN that protects conversations across all supported AI plat
 
 ---
 ### Two Lock modes 
-* **Individual Chats Mode** 
-* **Complete App Lock Mode**
+Individual Chats Mode
+Complete App Lock Mode
+
+
 ![lock modes](lockmodes.png)
 
 ---
