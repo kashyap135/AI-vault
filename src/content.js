@@ -5,20 +5,31 @@ if (hostname.includes("chatgpt.com")) adapter = new ChatGPTAdapter();
 else if (hostname.includes("gemini.google.com")) adapter = new GeminiAdapter();
 else if (hostname.includes("claude.ai")) adapter = new ClaudeAdapter();
 
+// --- GLOBAL APP STATES ---
 let lockedChatsList = [];
 let hiddenChatsList = [];
 let isVaultFolderOpen = false;
 let isSessionUnlocked = false;
 let awayTimer = null;
+let lockMode = "individual"; 
 
+// --- INITIAL DATA EXTRACTION ---
+if (adapter) {
+    chrome.storage.local.get(["lockedChats", "hiddenChats", "lockMode"], (result) => {
+        if (result.lockedChats) lockedChatsList = result.lockedChats;
+        if (result.hiddenChats) hiddenChatsList = result.hiddenChats;
+        if (result.lockMode) lockMode = result.lockMode; 
+        runVault();
+    });
+} 
+
+// --- USER AWAY AUTO-LOCK ENGINE ---
 function startAwayTracker() {
-    // 1. Clear any existing timer loops safely
     if (awayTimer) clearTimeout(awayTimer);
 
     chrome.storage.local.get(["vaultTimeout"], (result) => {
-        const timeoutDuration = result.vaultTimeout !== undefined ? result.vaultTimeout : 300000; // 5 mins default
+        const timeoutDuration = result.vaultTimeout !== undefined ? result.vaultTimeout : 300000; 
 
-        // If disabled by user, exit tracker completely
         if (timeoutDuration === 0) {
             console.log("🔒 AI Vault: Auto-Lock is currently disabled.");
             return;
@@ -29,22 +40,18 @@ function startAwayTracker() {
         function resetTimer() {
             clearTimeout(awayTimer);
             awayTimer = setTimeout(() => {
-                // LOCKOUT EVENT TRIGGERED DUE TO USER AWAY STATE
-                isSessionUnlocked = false;    // Re-locks active running chats
-                isVaultFolderOpen = false;    // Closes and locks stealth container rows
+                isSessionUnlocked = false;    
+                isVaultFolderOpen = false;    
                 
-                // Remove open verification modals to force a complete layout recalculation
                 const activeOverlay = document.getElementById('ai-vault-overlay');
                 if (activeOverlay) activeOverlay.remove();
                 
-                // Re-evaluate current DOM privacy rules immediately
                 enforcePrivacy();
                 runVault();
                 console.log("🔒 AI Vault: Session automatically secured due to inactivity.");
             }, timeoutDuration);
         }
 
-        // Listen for standard human interaction behaviors across the window surface
         window.removeEventListener('mousemove', resetTimer);
         window.removeEventListener('keydown', resetTimer);
         window.removeEventListener('click', resetTimer);
@@ -55,20 +62,28 @@ function startAwayTracker() {
         window.addEventListener('click', resetTimer, { passive: true });
         window.addEventListener('scroll', resetTimer, { passive: true });
 
-        resetTimer(); // Initialize tracking frames
+        resetTimer(); 
     });
 }
 
-// NEW: Live Storage Listener to catch configuration updates instantly without page reload!
+// --- LIVE CONTEXT WEBHOOK ---
 chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'local' && changes.vaultTimeout) {
-        console.log("🔒 AI Vault: Timeout setting updated live. Restarting idle clock tracker...");
-        startAwayTracker();
+    if (area === 'local') {
+        if (changes.vaultTimeout) {
+            console.log("🔒 AI Vault: Timeout setting updated live.");
+            startAwayTracker();
+        }
+        if (changes.lockMode) {
+            lockMode = changes.lockMode.newValue;
+            console.log(`🔒 AI Vault: Mode swapped to ${lockMode}. Re-checking privacy layout...`);
+            isSessionUnlocked = false; 
+            enforcePrivacy();
+        }
     }
 });
 
-// Call this once on page load inside your initialization functions
 startAwayTracker();
+
 // --- SECURITY HELPERS ---
 async function hashSecure(text) {
     const msgBuffer = new TextEncoder().encode(text);
@@ -78,14 +93,7 @@ async function hashSecure(text) {
 }
 const obscureUrl = (url) => btoa(encodeURIComponent(url));
 
-if (adapter) {
-    chrome.storage.local.get(["lockedChats", "hiddenChats"], (result) => {
-        if (result.lockedChats) lockedChatsList = result.lockedChats;
-        if (result.hiddenChats) hiddenChatsList = result.hiddenChats;
-        runVault();
-    });
-}
-
+// --- CORE VAULT LOOP ---
 function runVault() {
     if (!adapter) return;
     injectVaultFolderUI();
@@ -108,10 +116,8 @@ function runVault() {
         }
 
         adapter.injectLockUI(chatNode, isLocked, isHidden, 
-            // LOCK BUTTON CLICK LOGIC
             (lockBtn) => {
                 if (lockedChatsList.includes(chatId)) {
-                    // It's locked. Prompt for PIN before unlocking!
                     createInPageAuthOverlay("Action", () => {
                         lockedChatsList = lockedChatsList.filter(id => id !== chatId);
                         lockBtn.innerText = '🔓';
@@ -119,17 +125,14 @@ function runVault() {
                         enforcePrivacy();
                     });
                 } else {
-                    // It's unlocked. Lock it instantly (no PIN required to secure something)
                     lockedChatsList.push(chatId);
                     lockBtn.innerText = '🔒';
                     chrome.storage.local.set({ lockedChats: lockedChatsList });
                     enforcePrivacy();
                 }
             },
-            // HIDE BUTTON CLICK LOGIC
             (hideBtn) => {
                 if (hiddenChatsList.includes(chatId)) {
-                    // It's hidden. Prompt for PIN before unhiding!
                     createInPageAuthOverlay("Action", () => {
                         hiddenChatsList = hiddenChatsList.filter(id => id !== chatId);
                         hideBtn.innerText = '👁️';
@@ -137,7 +140,6 @@ function runVault() {
                         runVault(); 
                     });
                 } else {
-                    // It's visible. Hide it instantly.
                     hiddenChatsList.push(chatId);
                     hideBtn.innerText = '🙈';
                     chrome.storage.local.set({ hiddenChats: hiddenChatsList });
@@ -149,6 +151,7 @@ function runVault() {
     enforcePrivacy();
 }
 
+// --- FOLDER INJECTION ---
 function injectVaultFolderUI() {
     if (document.getElementById('ai-vault-folder-btn')) return;
     const sidebar = adapter.getSidebarTarget();
@@ -161,35 +164,44 @@ function injectVaultFolderUI() {
 
     folderItem.addEventListener('click', () => {
         if (isVaultFolderOpen) { isVaultFolderOpen = false; runVault(); } 
-        else { createInPageAuthOverlay("Folder"); } // No callback needed, handled internally
+        else { createInPageAuthOverlay("Folder"); } 
     });
     sidebar.prepend(folderItem);
 }
 
+// --- PRIVACY RENDER COMPLIANCE ---
 function enforcePrivacy() {
     const currentPath = obscureUrl(window.location.pathname);
     const mainWindow = adapter.getMainChatWindow();
     if (!mainWindow) return;
 
-    if (lockedChatsList.includes(currentPath) && !isSessionUnlocked) {
+    let shouldLock = false;
+    if (lockMode === "app") {
+        shouldLock = !isSessionUnlocked; 
+    } else {
+        shouldLock = lockedChatsList.includes(currentPath) && !isSessionUnlocked; 
+    }
+
+    if (shouldLock) {
         mainWindow.classList.add('ai-main-chat-locked');
-        if (!document.getElementById('ai-vault-overlay')) createInPageAuthOverlay("Chat");
+        if (!document.getElementById('ai-vault-overlay')) {
+            createInPageAuthOverlay(lockMode === "app" ? "Application" : "Chat");
+        }
     } else {
         mainWindow.classList.remove('ai-main-chat-locked');
         const overlay = document.getElementById('ai-vault-overlay');
         
-        // THE FIX: Only auto-delete the overlay if it is specifically the "Chat" blocker.
-        // This protects your "Action" (Unlock/Unhide) and "Folder" overlays from disappearing!
-        if (overlay && overlay.getAttribute('data-target-type') === 'Chat') {
+        if (overlay && (overlay.getAttribute('data-target-type') === 'Chat' || overlay.getAttribute('data-target-type') === 'Application')) {
             overlay.remove();
         }
         
-        if (!lockedChatsList.includes(currentPath)) isSessionUnlocked = false;
+        if (lockMode === "individual" && !lockedChatsList.includes(currentPath)) {
+            isSessionUnlocked = false;
+        }
     }
 }
 
-// UPGRADED: Now accepts a callback function to run on success!
-// UPGRADED: Dynamically displays which PIN (Master vs Custom) is required!
+// --- MODAL IN-PAGE GENERATOR ---
 function createInPageAuthOverlay(targetType, onSuccessCallback = null) {
     if (document.getElementById('ai-vault-overlay')) return;
 
@@ -198,12 +210,10 @@ function createInPageAuthOverlay(targetType, onSuccessCallback = null) {
     overlay.className = 'ai-lock-overlay';
     overlay.setAttribute('data-target-type', targetType);
     
-    // Append the blank overlay first to catch the background click
     document.body.appendChild(overlay);
 
     const platformKey = `${adapter.platformName.toLowerCase()}Pin`;
     
-    // Check storage to see if a custom PIN exists before drawing the box
     chrome.storage.local.get([platformKey], (result) => {
         const hasCustomPin = !!result[platformKey];
         const pinLabel = hasCustomPin ? `${adapter.platformName} PIN` : "Master PIN";
@@ -256,7 +266,7 @@ function createInPageAuthOverlay(targetType, onSuccessCallback = null) {
     });
 }
 
-// --- KEYBOARD SHORTCUTS ---
+// --- SHORTCUTS ENGINE ---
 document.addEventListener('keydown', (e) => {
     if (e.altKey && e.key.toLowerCase() === 'h') {
         const vaultBtn = document.getElementById('ai-vault-folder-btn');
